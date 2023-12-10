@@ -85,7 +85,6 @@
 // }
 
 var CURRENTROOM = "";
-var clearInterval;
 var totalSecond = 10;
 var currentUser = "";
 var room = document.querySelector("#room");
@@ -125,16 +124,18 @@ connection.on("ReceiveJoinInfo", (user) => {
 
 connection.on("ReceiveInfoRoom", (user) => {
     var element2 = document.querySelector("#offerValue2");
-    element2.innerHTML=user+"offer this price "+(Number(data)+100)+"$";
-    button.disabled=false;
-    timeSection.style.display="none";
+    element2.innerHTML = user + "offer this price " + (Number(data) + 100) + "$";
+    button.disabled = false;
+    timeSection.style.display = "none";
+    clearTimeout(myInterval);
+    totalSecond = 10;
 })
 
-connection.on("ReceiveWinInfoRoom", (user) => {
+connection.on("ReceiveWinInfoRoom", (user, data) => {
     var element2 = document.querySelector("#offerValue2");
-    element2.innerHTML=user+"offer this price "+(Number(data)+100)+"$";
-    button.disabled=false;
-    timeSection.style.display="none";
+    element2.innerHTML = user + "offer this price " + (Number(data) + 100) + "$";
+    button.disabled = true;
+    timeSection.style.display = "none";
 })
 
 async function JoinChevrolet() {
@@ -153,30 +154,33 @@ async function JoinMercedes() {
     await connection.invoke("JoinRoom", CURRENTROOM, currentUser)
 }
 
+var myInterval;
 async function IncreaseOffer() {
+    clearTimeout(myInterval);
     timeSection.style.display = "block";
     totalSeconds = 10;
     let result = document.querySelector("#user");
-var lastOffer=0;
+    var lastOffer = 0;
     $.get(url + `IncreaseRoom?room=${CURRENTROOM}&number=100`, function (data, status) {
         $.get(url + "Room?room=" + CURRENTROOM, function (data, status) {
             var element2 = document.querySelector("#offerValue2")
             element2.innerHTML = data;
-            lastOffer=data;
+            lastOffer = data;
         })
     })
 
     await connection.invoke("SendMessageRoom", CURRENTROOM, result.value);
     button.disabled = true;
 
-    var myInterval = setInterval(() => {
+    myInterval = setInterval(async() => {
         --totalSecond;
         time.innerHTML = totalSecond;
-        // button.disabled = false;
         if (totalSecond == 0) {
-            totalSecond=10;
-            clearInterval(myInterval);
-             connection.invoke("SendWinnerMessageRoom", CURRENTROOM, "Game Over\n" + result.value + "is Winner!!!");
+            totalSecond = 10;
+            button.disabled = false;
+            clearTimeout(myInterval);
+            button.disabled=true;
+            await connection.invoke("SendWinnerMessageRoom", CURRENTROOM, "Game Over\n" + result.value + "is Winner!!!");
         }
     }, 1000);
 }
